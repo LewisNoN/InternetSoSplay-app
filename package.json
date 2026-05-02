@@ -1,13 +1,13 @@
 {
   "name": "internetsosplay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "InternetSOSplay — Reconexion automatica para portales cautivos y uso de emergencia",
   "main": "main.js",
   "author": "OfertivaMX",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LewisNoN/internetsosplay-app.git"
+    "url": "https://github.com/LewisNoN/InternetSoSplay-app.git"
   },
   "scripts": {
     "start": "electron .",
