@@ -2708,8 +2708,11 @@ window.addEventListener('DOMContentLoaded',function(){
         }
       }
     } catch (e0) { /* ok */ }
-    refreshUpdateBadge();
-    tryShowMandatoryUpdateIfNeeded();
+    // Secuencial para evitar dos llamadas paralelas a listAppReleases que
+    // provocan "Please check update first" en electron-updater
+    refreshUpdateBadge().then(function(){
+      return tryShowMandatoryUpdateIfNeeded();
+    }).catch(function(){});
     setInterval(function(){ tryShowMandatoryUpdateIfNeeded(); }, 10 * 60 * 1000);
   })();
 });

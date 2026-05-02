@@ -410,11 +410,8 @@ function readPackageJson() {
 }
 
 function getGithubPublishTarget() {
-  const pkg = readPackageJson();
-  const pub = pkg && pkg.build && pkg.build.publish;
-  const first = Array.isArray(pub) ? pub[0] : pub;
-  if (!first || first.provider !== 'github' || !first.owner || !first.repo) return null;
-  return { owner: first.owner, repo: first.repo };
+  // Hardcodeado porque dentro del asar la sección "build" del package.json no está disponible
+  return { owner: 'LewisNoN', repo: 'InternetSoSplay-app' };
 }
 
 function tagToSemver(tag) {
