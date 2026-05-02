@@ -1,0 +1,14 @@
+node_modules/
+.cache/
+.replit
+replit.md
+dist/
+dist-v31/
+dist-*/
+.local/
+*.exe
+*.log
+.DS_Store
+Thumbs.db
+tools/license-private.pem
+tools/license-*.json
