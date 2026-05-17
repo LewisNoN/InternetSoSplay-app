@@ -1512,6 +1512,7 @@ if (typeof window.api === 'undefined') {
     loadConfig:  function(){ try{var d=localStorage.getItem('tp_config');return Promise.resolve({ok:true,config:d?JSON.parse(d):null});}catch(e){return Promise.resolve({ok:true,config:null});} },
     saveAppearance: function(a){ try{localStorage.setItem('tp_appearance',JSON.stringify(a));}catch(e){} return Promise.resolve({ok:true}); },
     loadAppearance: function(){ try{var d=localStorage.getItem('tp_appearance');return Promise.resolve({ok:true,appearance:d?JSON.parse(d):null});}catch(e){return Promise.resolve({ok:true,appearance:null});} },
+    capturePortalParams:function(){ return Promise.resolve({ ok:false, error:'No disponible en modo desarrollo — usa la app instalada' }); },
     windowMinimize:function(){}, windowMaximize:function(){}, windowClose:function(){},
     onPsData:function(cb){}, onPsLog:function(cb){}, onPsError:function(cb){},
     onPsStarted:function(cb){}, onPsStopped:function(cb){},

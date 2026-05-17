@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('api', {
   installUpdateQuit: () => ipcRenderer.invoke('install-update-quit'),
 
   // ── CONTROLES DE VENTANA ────────────────────────────────────────
+  capturePortalParams: () => ipcRenderer.invoke('capture-portal-params'),
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
   windowMaximize: () => ipcRenderer.invoke('window-maximize'),
   windowClose:    () => ipcRenderer.invoke('window-close'),
