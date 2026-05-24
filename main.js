@@ -59,7 +59,10 @@ const ALLOWED_EXTERNAL_HOSTS = new Set([
   't.me',
   'telegram.me',
   'github.com',
-  'www.github.com'
+  'www.github.com',
+  'youtube.com',
+  'www.youtube.com',
+  'youtu.be'
 ]);
 
 function isAllowedExternalUrl(raw) {
