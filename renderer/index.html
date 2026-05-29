@@ -159,6 +159,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; color:
 }
 .update-foot-btn.secondary:disabled { opacity: 0.45; cursor: not-allowed; }
 .update-progress { font-family: 'Consolas', monospace; font-size: 11px; color: var(--fg-low); margin-top: 6px; }
+.update-progress-bar-wrap { width:100%; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden; margin-top:8px; height:8px; display:none; }
+.update-progress-bar-fill { height:8px; background:var(--accent,#63b3ed); border-radius:6px; width:0%; transition:width 0.3s ease; }
+.update-progress-label { font-size:11px; color:var(--fg-low); margin-top:4px; display:none; }
 .theme-btn {
   background: linear-gradient(135deg, #f8d57e, #d4a017 55%, #b8860b);
   border: 1px solid rgba(255, 220, 120, 0.7);
@@ -1134,6 +1137,10 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
     <div id="update-panel-summary">Cargando…</div>
     <div class="update-list" id="update-list"></div>
     <div class="update-progress" id="update-progress"></div>
+    <div class="update-progress-bar-wrap" id="update-bar-wrap">
+      <div class="update-progress-bar-fill" id="update-bar-fill"></div>
+    </div>
+    <div class="update-progress-label" id="update-bar-label"></div>
   </div>
   <div class="update-panel-foot">
     <button type="button" class="update-foot-btn primary" id="btn-download-update" onclick="downloadLatestUpdateFromPanel()">Descargar última versión</button>
@@ -1655,42 +1662,17 @@ function hideMandatoryUpdateOverlay(){
 }
 
 async function tryShowMandatoryUpdateIfNeeded(){
+  // Solo muestra badge en el boton — no bloquea la app con overlay
   try {
-    if (dom('welcome-overlay').classList.contains('show')) return;
-    if (!window.api || typeof window.api.getAppVersion !== 'function' || typeof window.api.listAppReleases !== 'function') return;
+    if (!window.api || typeof window.api.listAppReleases !== 'function') return;
     var ver = await window.api.getAppVersion();
-    if (!ver || !ver.isPackaged) {
-      hideMandatoryUpdateOverlay();
-      return;
-    }
+    if (!ver || !ver.isPackaged) return;
     var r = await window.api.listAppReleases();
-    if (!r || !r.ok) {
-      hideMandatoryUpdateOverlay();
-      if (r && r.error) addLog('warn','Comprobacion de actualizacion obligatoria: ' + r.error);
-      return;
+    if (r && r.ok && (r.count || 0) > 0) {
+      setUpdateBadge(r.count);
+      addLog('info','Nueva version disponible. Ve a Actualizaciones para instalarla.');
     }
-    if ((r.count || 0) < 1 || !r.releases || !r.releases.length) {
-      hideMandatoryUpdateOverlay();
-      return;
-    }
-    var curEl = dom('mandatory-current-ver');
-    var latEl = dom('mandatory-latest-tag');
-    if (curEl) curEl.textContent = 'v' + (r.currentVersion || ver.version || '?');
-    if (latEl) latEl.textContent = r.releases[0].tag || '';
-    var msg = dom('mandatory-update-msg');
-    if (msg) msg.textContent = '';
-    var pr = dom('mandatory-progress');
-    if (pr) pr.textContent = '';
-    var br = dom('btn-mandatory-restart');
-    var bd = dom('btn-mandatory-download');
-    if (br) br.disabled = true;
-    if (bd) bd.disabled = false;
-    updateDownloadReady = false;
-    dom('mandatory-update-overlay').classList.add('show');
-    addLog('info','Hay una nueva version disponible en GitHub.');
-  } catch (e) {
-    hideMandatoryUpdateOverlay();
-  }
+  } catch (e) { /* silencioso */ }
 }
 
 async function downloadMandatoryUpdate(){
@@ -2672,27 +2654,39 @@ window.addEventListener('DOMContentLoaded',function(){
       if (ev.kind === 'available') addLog('info','Actualizacion disponible: v' + (ev.version || '?'));
       if (ev.kind === 'downloaded') {
         updateDownloadReady = true;
+        // Barra al 100%
+        var barWrap  = dom('update-bar-wrap');
+        var barFill  = dom('update-bar-fill');
+        var barLabel = dom('update-bar-label');
+        if (barWrap)  barWrap.style.display  = 'block';
+        if (barFill)  barFill.style.width    = '100%';
+        if (barFill)  barFill.style.background = 'var(--green,#68d391)';
+        if (barLabel) barLabel.style.display = 'block';
+        if (barLabel) barLabel.textContent   = '✓ Descarga completada — reinicia para instalar';
+        if (barLabel) barLabel.style.color   = 'var(--green,#68d391)';
+        var pr = dom('update-progress');
+        if (pr) pr.textContent = '';
+        // Habilitar botón reiniciar
         var br = dom('btn-restart-install');
         if (br) br.disabled = false;
-        var pr = dom('update-progress');
-        if (pr) pr.textContent = 'Listo. Pulsa «Reiniciar e instalar» para aplicar la actualización.';
         var bd = dom('btn-download-update');
-        if (bd) bd.disabled = false;
-        var mbr = dom('btn-mandatory-restart');
-        var mpr = dom('mandatory-progress');
-        var mbd = dom('btn-mandatory-download');
-        if (mbr) mbr.disabled = false;
-        if (mbd) mbd.disabled = false;
-        if (mpr) mpr.textContent = 'Listo. Pulsa «Reiniciar e instalar» para aplicar la actualización.';
+        if (bd) bd.textContent = 'Descargado ✓';
+        if (bd) bd.disabled = true;
         addLog('ok','Actualizacion descargada. Reinicia la app para instalar.');
       }
       if (ev.kind === 'none') addLog('gray','No hay actualizaciones nuevas (electron-updater)');
       if (ev.kind === 'progress') {
+        var pct = ev.percent != null ? Math.round(ev.percent) : 0;
+        // Barra de progreso en panel
+        var barWrap  = dom('update-bar-wrap');
+        var barFill  = dom('update-bar-fill');
+        var barLabel = dom('update-bar-label');
         var p2 = dom('update-progress');
-        var pct = ev.percent != null ? Math.round(ev.percent) : '?';
-        if (p2) p2.textContent = 'Descarga ' + pct + '%';
-        var mp = dom('mandatory-progress');
-        if (mp) mp.textContent = 'Descarga ' + pct + '%';
+        if (barWrap)  barWrap.style.display  = 'block';
+        if (barLabel) barLabel.style.display = 'block';
+        if (barFill)  barFill.style.width    = pct + '%';
+        if (barLabel) barLabel.textContent   = 'Descargando… ' + pct + '%';
+        if (p2) p2.textContent = '';
       }
       if (ev.kind === 'error') {
         addLog('err','Actualizaciones: ' + (ev.error || 'error'));
