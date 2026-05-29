@@ -1040,9 +1040,9 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
 
 <div class="mandatory-update-overlay" id="mandatory-update-overlay">
   <div class="mandatory-update-modal">
-    <h2>Actualización obligatoria</h2>
+    <h2>Nueva versión disponible</h2>
     <div class="license-muted">
-      Hay una versión más nueva en el repositorio oficial. Por seguridad, debes actualizar antes de seguir usando InternetSOSplay (parches y correcciones).
+      Hay una actualización disponible. Te recomendamos instalarla para obtener las últimas mejoras.
     </div>
     <div class="license-muted" style="margin-top:8px;">
       Tu versión: <strong id="mandatory-current-ver">—</strong>
@@ -1055,6 +1055,7 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
       <button type="button" class="welcome-exit-btn" style="min-width:120px;" onclick="exitAppFromWelcome()">Salir</button>
       <button type="button" class="btn-lic-primary" id="btn-mandatory-download" onclick="downloadMandatoryUpdate()">Descargar actualización</button>
       <button type="button" class="btn-lic-secondary" id="btn-mandatory-restart" onclick="restartToInstallUpdate()" disabled>Reiniciar e instalar</button>
+      <div id="mandatory-countdown" style="font-size:12px;color:var(--fg-low);margin-top:8px;display:none;"></div>
     </div>
   </div>
 </div>
@@ -1686,7 +1687,7 @@ async function tryShowMandatoryUpdateIfNeeded(){
     if (bd) bd.disabled = false;
     updateDownloadReady = false;
     dom('mandatory-update-overlay').classList.add('show');
-    addLog('warn','Actualizacion obligatoria: hay una version mas nueva en GitHub.');
+    addLog('info','Hay una nueva version disponible en GitHub.');
   } catch (e) {
     hideMandatoryUpdateOverlay();
   }
@@ -1715,7 +1716,18 @@ async function downloadMandatoryUpdate(){
       addLog('err','Actualizacion obligatoria: ' + ((r && r.error) || 'error'));
       return;
     }
-    if (pr) pr.textContent = 'Descargando v' + (r.version || '?') + '…';
+    if (pr) pr.textContent = '✓ Descarga completa. Instalando en 10 segundos…';
+    // Auto-restart countdown
+    var br2 = dom('btn-mandatory-restart');
+    var cd  = dom('mandatory-countdown');
+    if (br2) br2.disabled = false;
+    var secs = 10;
+    if (cd) { cd.style.display = 'block'; cd.textContent = 'Reiniciando en ' + secs + 's…'; }
+    var cdTimer = setInterval(function(){
+      secs--;
+      if (cd) cd.textContent = secs > 0 ? 'Reiniciando en ' + secs + 's…' : 'Reiniciando…';
+      if (secs <= 0) { clearInterval(cdTimer); restartToInstallUpdate(); }
+    }, 1000);
   } catch (e) {
     if (msg) msg.textContent = e.message || String(e);
     if (bd) bd.disabled = false;
