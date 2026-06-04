@@ -1338,17 +1338,39 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
       <div class="field"><label>Access Point Name (accname)</label><input id="p-acc" placeholder="Pendiente — extrae desde el link"/></div>
       <div class="field"><label>WLAN Parameter (MAC del AP)</label><input id="p-mac" placeholder="Pendiente"/></div>
       <hr class="field-divider">
+
+      <!-- MODO DE DISPOSITIVO -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--fg-mid);margin-bottom:7px;">Modo de autenticacion</div>
+        <div style="display:flex;gap:8px;">
+          <button id="btn-desktop" onclick="setTipoDispositivo('DESKTOP')"
+            style="flex:1;padding:7px 0;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-family:'Segoe UI',system-ui,sans-serif;transition:all 0.2s;">
+            🖥 DESKTOP
+          </button>
+          <button id="btn-android" onclick="setTipoDispositivo('ANDROID')"
+            style="flex:1;padding:7px 0;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--fg-low);background:rgba(255,255,255,0.04);color:var(--fg-mid);font-family:'Segoe UI',system-ui,sans-serif;transition:all 0.2s;">
+            📱 ANDROID
+          </button>
+        </div>
+        <div style="font-size:10px;color:var(--fg-low);margin-top:5px;font-family:'Consolas',monospace;">
+          ANDROID usa User-Agent movil y type=ANDROID — puede dar sesiones mas largas en algunos APs
+        </div>
+      </div>
+
       <div class="slider-field">
         <div class="slider-header"><span>Keep-alive (renovar sesion cada)</span><span class="slider-val"><span id="v-ka">240</span>s</span></div>
         <div class="slider-input-row">
-          <input type="range" min="60" max="600" step="1" value="240" id="s-ka" oninput="syncFromRange('ka')"/>
-          <input class="number-input" type="number" min="60" max="600" step="1" value="240" id="n-ka" oninput="syncFromNumber('ka')"/>
+          <input type="range" min="0.5" max="600" step="0.5" value="240" id="s-ka" oninput="syncFromRange('ka')"/>
+          <input class="number-input" type="number" min="0.5" max="600" step="0.5" value="240" id="n-ka" oninput="syncFromNumber('ka')"/>
+        </div>
+        <div id="ka-warning" style="display:none;margin-top:5px;font-size:10px;color:#f97316;font-family:'Consolas',monospace;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-radius:6px;padding:5px 8px;">
+          ⚠ Valores menores a 1s no se recomiendan — pueden saturar el portal y generar inestabilidad. Default: 240s
         </div>
       </div>
       <div class="slider-field">
         <div class="slider-header"><span>Reintento entre intentos fallidos (segundos)</span><span class="slider-val"><span id="v-ri">1</span>s</span></div>
         <div class="slider-input-row">
-          <input type="range" min="1" max="30" step="0.1" value="1" id="s-ri" oninput="syncFromRange('ri')"/>
+          <input type="range" min="0.1" max="30" step="0.1" value="1" id="s-ri" oninput="syncFromRange('ri')"/>
           <input class="number-input" type="number" min="0.1" max="30" step="0.1" value="1" id="n-ri" oninput="syncFromNumber('ri')"/>
         </div>
         <div id="retry-warning" class="retry-warning">Valores menores a 1s pueden generar inestabilidad. El valor predeterminado es 1s.</div>
@@ -1374,6 +1396,68 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
         <div class="toggle-info"><span class="toggle-label">Activar hotspot al iniciar</span><span class="toggle-desc">Una vez, sin volver a tocarlo</span></div>
         <label class="switch"><input type="checkbox" id="tog-hotspot" checked/><span class="switch-slider"></span></label>
       </div>
+
+      <!-- MODO AVANZADO -->
+      <hr class="field-divider" style="margin:10px 0 8px;">
+      <div style="margin-bottom:6px;">
+        <button onclick="toggleAdvanced()" id="btn-advanced-toggle"
+          style="background:none;border:1px solid rgba(255,255,255,0.15);color:var(--fg-low);border-radius:7px;padding:4px 12px;font-size:11px;cursor:pointer;width:100%;text-align:left;">
+          ⚙️ Modo Avanzado <span id="advanced-arrow">▼</span>
+        </button>
+      </div>
+      <div id="advanced-panel" style="display:none;">
+
+        <!-- Toggle reconexion proactiva -->
+        <div class="toggle-row" style="margin-bottom:6px;">
+          <div class="toggle-info">
+            <span class="toggle-label" style="font-size:12px;">Reconexión proactiva</span>
+            <span class="toggle-desc">Reconecta antes de que el portal corte la sesión</span>
+          </div>
+          <label class="switch"><input type="checkbox" id="tog-proactiva" onchange="onProactivaChange()"/><span class="switch-slider"></span></label>
+        </div>
+
+        <!-- Slider intervalo proactivo -->
+        <div id="proactiva-options" style="display:none;padding-left:4px;">
+          <div class="field-label" style="font-size:11px;margin-bottom:2px;">Reconectar cada <b id="lbl-intervalo-proactivo">210</b>s</div>
+          <input type="range" id="sl-intervalo-proactivo" min="30" max="600" step="10" value="210"
+            oninput="dom('lbl-intervalo-proactivo').textContent=this.value"
+            style="width:100%;margin-bottom:8px;">
+
+          <div class="field-label" style="font-size:11px;margin-bottom:2px;">Duración del corte: <b id="lbl-dur-desconexion">1.2</b>s</div>
+          <input type="range" id="sl-dur-desconexion" min="0.1" max="5" step="0.1" value="1.2"
+            oninput="dom('lbl-dur-desconexion').textContent=parseFloat(this.value).toFixed(1)"
+            style="width:100%;margin-bottom:8px;">
+        </div>
+
+        <!-- MAC Spoofing -->
+        <div class="toggle-row" style="margin-bottom:6px;">
+          <div class="toggle-info">
+            <span class="toggle-label" style="font-size:12px;">MAC Spoofing</span>
+            <span class="toggle-desc">Cambia la MAC al reconectar (sesión más fresca)</span>
+          </div>
+          <label class="switch"><input type="checkbox" id="tog-mac-spoof"/><span class="switch-slider"></span></label>
+        </div>
+
+        <!-- Health Check Avanzado -->
+        <div class="toggle-row" style="margin-bottom:6px;">
+          <div class="toggle-info">
+            <span class="toggle-label" style="font-size:12px;">Health-check avanzado</span>
+            <span class="toggle-desc">Verifica TCP al portal si falla el check normal</span>
+          </div>
+          <label class="switch"><input type="checkbox" id="tog-health-check" checked/><span class="switch-slider"></span></label>
+        </div>
+
+        <!-- Fallback sin DNS -->
+        <div class="toggle-row" style="margin-bottom:2px;">
+          <div class="toggle-info">
+            <span class="toggle-label" style="font-size:12px;">Fallback sin DNS</span>
+            <span class="toggle-desc">Detecta conexión por gateway si DNS falla</span>
+          </div>
+          <label class="switch"><input type="checkbox" id="tog-fallback-dns" checked/><span class="switch-slider"></span></label>
+        </div>
+
+      </div><!-- /advanced-panel -->
+
       <div class="btn-row">
         <button class="btn btn-save" onclick="guardarConfig()">Guardar</button>
         <button class="btn btn-default" onclick="limpiarCampos()">Limpiar</button>
@@ -1577,6 +1661,24 @@ function parsearLink(){
   }catch(e){err.textContent='✗ Link invalido: '+(e.message||String(e));err.classList.add('show');}
 }
 
+// ── MODO DE DISPOSITIVO ──────────────────────────────────────────
+var _tipoDispositivo = 'DESKTOP';
+
+function setTipoDispositivo(modo) {
+  _tipoDispositivo = modo;
+  var esAndroid = (modo === 'ANDROID');
+  var btnD = dom('btn-desktop');
+  var btnA = dom('btn-android');
+  if (btnD && btnA) {
+    btnD.style.background    = esAndroid ? 'rgba(255,255,255,0.04)' : 'var(--accent)';
+    btnD.style.color         = esAndroid ? 'var(--fg-mid)' : '#fff';
+    btnD.style.borderColor   = esAndroid ? 'var(--fg-low)' : 'var(--accent)';
+    btnA.style.background    = esAndroid ? 'var(--accent)' : 'rgba(255,255,255,0.04)';
+    btnA.style.color         = esAndroid ? '#fff' : 'var(--fg-mid)';
+    btnA.style.borderColor   = esAndroid ? 'var(--accent)' : 'var(--fg-low)';
+  }
+}
+
 function limpiarCampos(){
   dom('p-link').value='';dom('p-ssid').value='';dom('p-acc').value='';dom('p-mac').value='';
   setControlValue('ka', 240);
@@ -1584,26 +1686,31 @@ function limpiarCampos(){
   setControlValue('rw', 45);
   setControlValue('rn', 70);
   dom('tog-hotspot').checked=true;
+  setTipoDispositivo('DESKTOP');
   updateRetryWarning();
+  updateKaWarning();
   dom('parse-ok').classList.remove('show');dom('parse-err').classList.remove('show');
   addLog('gray','Campos limpiados');
 }
 
 function formatControlValue(key, value){
-  if (key === 'ri') {
-    return Number(value).toFixed(1).replace(/\.0$/, '');
+  if (key === 'ri' || key === 'ka') {
+    var n = Number(value);
+    // Si es entero, mostrar sin decimales; si tiene .5, mostrar .5
+    return n % 1 === 0 ? String(n) : n.toFixed(1).replace(/\.0$/, '');
   }
   return String(Math.round(Number(value)));
 }
 
 function clampValue(key, value){
-  var mins = { ka: 60, ri: 0.1, rw: 20, rn: 30 };
+  var mins = { ka: 0.5, ri: 0.1, rw: 20, rn: 30 };
   var maxs = { ka: 600, ri: 30,  rw: 120, rn: 300 };
   var v = Number(value);
   if (isNaN(v)) return null;
   if (v < mins[key]) v = mins[key];
   if (v > maxs[key]) v = maxs[key];
-  if (key !== 'ri') v = Math.round(v);
+  if (key !== 'ri' && key !== 'ka') v = Math.round(v);
+  else v = Math.round(v * 10) / 10; // un decimal
   return v;
 }
 
@@ -1615,6 +1722,7 @@ function setControlValue(key, value){
   dom('n-' + key).value = formatted;
   dom('v-' + key).textContent = formatted;
   if (key === 'ri') updateRetryWarning();
+  if (key === 'ka') updateKaWarning();
 }
 
 function syncFromRange(key){
@@ -1629,6 +1737,12 @@ function updateRetryWarning(){
   var v = parseFloat(dom('n-ri').value);
   var show = !isNaN(v) && v > 0 && v < 1;
   dom('retry-warning').classList.toggle('show', show);
+}
+
+function updateKaWarning(){
+  var v = parseFloat(dom('n-ka').value);
+  var el = dom('ka-warning');
+  if (el) el.style.display = (!isNaN(v) && v < 1) ? 'block' : 'none';
 }
 
 function goToHelp(){
@@ -2578,11 +2692,18 @@ async function guardarConfig(){
     ssidPreferido:      dom('p-ssid').value,
     accname:            dom('p-acc').value,
     wlanparameter:      dom('p-mac').value,
-    intervaloKeepAlive: parseInt(dom('n-ka').value)||240,
+    tipoDispositivo:    _tipoDispositivo,
+    intervaloKeepAlive: parseFloat(dom('n-ka').value)||240,
     intervaloReintento: parseFloat(dom('n-ri').value)||1,
     segsParaReconWifi:  parseInt(dom('n-rw').value)||45,
     segsParaResetNic:   parseInt(dom('n-rn').value)||70,
-    hotspotAlInicio:    dom('tog-hotspot').checked
+    hotspotAlInicio:         dom('tog-hotspot').checked,
+    reconexionProactiva:     dom('tog-proactiva').checked,
+    intervaloProactivo:      parseFloat(dom('sl-intervalo-proactivo').value),
+    duracionDesconexion:     parseFloat(dom('sl-dur-desconexion').value),
+    macSpoofing:             dom('tog-mac-spoof').checked,
+    healthCheckAvanzado:     dom('tog-health-check').checked,
+    fallbackSinDns:          dom('tog-fallback-dns').checked
   };
   try{
     var r=await window.api.saveConfig(cfg);
@@ -2602,11 +2723,18 @@ async function loadSavedState(){
       if(c.ssidPreferido)     dom('p-ssid').value=c.ssidPreferido;
       if(c.accname)           dom('p-acc').value=c.accname;
       if(c.wlanparameter)     dom('p-mac').value=c.wlanparameter;
+      if(c.tipoDispositivo)   setTipoDispositivo(c.tipoDispositivo);
       if(c.intervaloKeepAlive){setControlValue('ka', c.intervaloKeepAlive);}
       if(c.intervaloReintento){setControlValue('ri', c.intervaloReintento);}
       if(c.segsParaReconWifi) {setControlValue('rw', c.segsParaReconWifi);}
       if(c.segsParaResetNic)  {setControlValue('rn', c.segsParaResetNic);}
-      if(c.hotspotAlInicio!=null) dom('tog-hotspot').checked=c.hotspotAlInicio;
+      if(c.hotspotAlInicio!=null)      dom('tog-hotspot').checked=c.hotspotAlInicio;
+      if(c.reconexionProactiva!=null){ dom('tog-proactiva').checked=c.reconexionProactiva; onProactivaChange(); }
+      if(c.intervaloProactivo)        dom('sl-intervalo-proactivo').value=c.intervaloProactivo, dom('lbl-intervalo-proactivo').textContent=c.intervaloProactivo;
+      if(c.duracionDesconexion)       dom('sl-dur-desconexion').value=c.duracionDesconexion, dom('lbl-dur-desconexion').textContent=parseFloat(c.duracionDesconexion).toFixed(1);
+      if(c.macSpoofing!=null)         dom('tog-mac-spoof').checked=c.macSpoofing;
+      if(c.healthCheckAvanzado!=null) dom('tog-health-check').checked=c.healthCheckAvanzado;
+      if(c.fallbackSinDns!=null)      dom('tog-fallback-dns').checked=c.fallbackSinDns;
       updateRetryWarning();
       addLog('gray','Configuracion previa cargada');
     }
@@ -2772,6 +2900,21 @@ function fallbackCopy(text){
     }
   };
 })();
+
+// ── MODO AVANZADO ────────────────────────────────────────────────────
+function toggleAdvanced(){
+  var p = dom('advanced-panel');
+  var a = dom('advanced-arrow');
+  var open = p.style.display === 'none';
+  p.style.display = open ? 'block' : 'none';
+  if(a) a.textContent = open ? '▲' : '▼';
+}
+
+function onProactivaChange(){
+  var checked = dom('tog-proactiva').checked;
+  var opts    = dom('proactiva-options');
+  if(opts) opts.style.display = checked ? 'block' : 'none';
+}
 </script>
 </body>
 </html>
