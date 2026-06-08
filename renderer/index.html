@@ -2197,20 +2197,7 @@ async function populateUpdatePanel(){
       dt.style.color = 'var(--fg-low)';
       dt.textContent = rel.publishedAt || '';
       div.appendChild(dt);
-      if (rel.url) {
-        var a = document.createElement('a');
-        a.href = '#';
-        a.textContent = 'Ver en GitHub ↗';
-        a.addEventListener('click', function(ev){
-          ev.preventDefault();
-          openExternalLink(rel.url);
-        });
-        var wrap = document.createElement('div');
-        wrap.style.marginTop = '8px';
-        wrap.appendChild(a);
-        div.appendChild(wrap);
-      }
-      dom('update-list').appendChild(div);
+dom('update-list').appendChild(div);
     });
   } catch (e) {
     sum.textContent = e.message || String(e);

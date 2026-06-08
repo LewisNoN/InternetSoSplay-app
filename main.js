@@ -13,7 +13,7 @@ const https = require('https');
 const { spawn, execSync, execFileSync } = require('child_process');
 const license = require('./lib/license');
 
-const TRIAL_MS = 30 * 60 * 1000;
+const TRIAL_MS = 3 * 24 * 60 * 60 * 1000; // 3 dias de prueba
 const REG_BASE = 'HKCU\\Software\\OfertivaMX\\InternetSOSplay';
 const TRIAL_MIN_EPOCH_MS = Date.UTC(2024, 0, 1);
 
