@@ -1318,6 +1318,7 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
 <div class="metrics">
   <div class="metric"><div class="metric-label">Sesion actual</div><div class="metric-value yellow" id="m-sesion">&mdash;</div></div>
   <div class="metric"><div class="metric-label">Reconexiones</div><div class="metric-value blue" id="m-recon">0</div></div>
+  <div class="metric"><div class="metric-label">Perdida de red</div><div class="metric-value" id="m-perdida" style="font-size:15px;padding-top:4px;color:var(--orange);">&mdash;</div></div>
   <div class="metric"><div class="metric-label">Ultima caida</div><div class="metric-value" id="m-caida" style="font-size:15px;padding-top:4px;">&mdash;</div></div>
   <div class="metric"><div class="metric-label">Avg reconexion</div><div class="metric-value green" id="m-avg">&mdash;</div></div>
 </div>
@@ -1360,8 +1361,8 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
       <div class="slider-field">
         <div class="slider-header"><span>Keep-alive (renovar sesion cada)</span><span class="slider-val"><span id="v-ka">240</span>s</span></div>
         <div class="slider-input-row">
-          <input type="range" min="0.5" max="600" step="0.5" value="240" id="s-ka" oninput="syncFromRange('ka')"/>
-          <input class="number-input" type="number" min="0.5" max="600" step="0.5" value="240" id="n-ka" oninput="syncFromNumber('ka')"/>
+          <input type="range" min="0.1" max="600" step="0.1" value="1" id="s-ka" oninput="syncFromRange('ka')"/>
+          <input class="number-input" type="number" min="0.1" max="600" step="0.1" value="1" id="n-ka" oninput="syncFromNumber('ka')"/>
         </div>
         <div id="ka-warning" style="display:none;margin-top:5px;font-size:10px;color:#f97316;font-family:'Consolas',monospace;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-radius:6px;padding:5px 8px;">
           ⚠ Valores menores a 1s no se recomiendan — pueden saturar el portal y generar inestabilidad. Default: 240s
@@ -1703,7 +1704,7 @@ function formatControlValue(key, value){
 }
 
 function clampValue(key, value){
-  var mins = { ka: 0.5, ri: 0.1, rw: 20, rn: 30 };
+  var mins = { ka: 0.1, ri: 0.1, rw: 20, rn: 30 };
   var maxs = { ka: 600, ri: 30,  rw: 120, rn: 300 };
   var v = Number(value);
   if (isNaN(v)) return null;
@@ -1875,12 +1876,19 @@ function startLicenseUiTimer(){
 
 function formatTrialCountdown(totalSeconds){
   var s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
-  var m = Math.floor(s / 60);
-  var r = s % 60;
-  if (m <= 0) return r + 's';
-  var rr = String(r);
-  if (rr.length < 2) rr = '0' + rr;
-  return m + 'm ' + rr + 's';
+  var dias  = Math.floor(s / 86400);
+  var horas = Math.floor((s % 86400) / 3600);
+  var mins  = Math.floor((s % 3600) / 60);
+  var segs  = s % 60;
+  var pad   = function(n){ return n < 10 ? '0'+n : ''+n; };
+  if (dias > 0) {
+    return dias + 'd ' + pad(horas) + 'h ' + pad(mins) + 'm ' + pad(segs) + 's';
+  } else if (horas > 0) {
+    return pad(horas) + 'h ' + pad(mins) + 'm ' + pad(segs) + 's';
+  } else if (mins > 0) {
+    return pad(mins) + 'm ' + pad(segs) + 's';
+  }
+  return segs + 's';
 }
 
 function applyLicenseUi(ls){
@@ -2385,7 +2393,7 @@ var dropTimeNet=null, dropTimeAuth=null;
 var pendienteRecuperacion=false;
 var sessionStart=null, sessionTicker=null, currentSess=0, statsTick=0;
 var totalOnline=0, totalOffline=0, longestSess=0;
-var reconCount=0, reconTimes=[], reconTimesSum=0, timeline=[];
+var reconCount=0, reconTimes=[], reconTimesSum=0, perdidaCount=0, timeline=[];
 
 var _dom={};
 function dom(id){return _dom[id]||(_dom[id]=document.getElementById(id));}
@@ -2612,10 +2620,17 @@ function handlePsData(data){
     var esRecuperacion = (data.reconexion===true) || (huboProblema === true);
 
     if(esRecuperacion && huboProblema){
-      reconCount++;
       var base = (dropTimeNet!==null) ? dropTimeNet : dropTimeAuth;
+      var elapsed = base!==null ? Math.round((Date.now()-base)/1000) : 999;
+      // Si la caída duró menos de 2s → pérdida de paquetes, no reconexión real
+      if(elapsed <= 2 && dropTimeNet!==null){
+        perdidaCount++;
+        dom('m-perdida').textContent = (data.time||nowStr()) + ' (' + perdidaCount + ')';
+        dropTimeNet=null; dropTimeAuth=null; pendienteRecuperacion=false;
+        setStatus('online','Online &mdash; '+msg);
+      } else {
+      reconCount++;
       if(base!==null){
-        var elapsed=Math.round((Date.now()-base)/1000);
         reconTimes.push(elapsed);
         reconTimesSum+=elapsed;
         // Evita crecimiento infinito; conservamos historial suficiente para promedios.
@@ -2631,6 +2646,7 @@ function handlePsData(data){
       dropTimeAuth=null;
       pendienteRecuperacion=false;
       updateStats();
+      } // end else (no packet loss)
     }
 
   }else if(t==='info'){
@@ -2670,6 +2686,12 @@ function handlePsData(data){
       dom('m-caida').textContent=data.time||nowStr();
       pendienteRecuperacion=true;
     }
+    // Detectar pérdida momentánea de paquetes (no es caída real)
+    // Cuando Hay-Internet falla brevemente pero se recupera sin reconexión
+    if(/perdida|paquete|packet|momentan/i.test(msg)){
+      perdidaCount++;
+      dom('m-perdida').textContent = (data.time||nowStr()) + ' (' + perdidaCount + ')';
+    }
   }
   // gray: no toca barra ni lastOnlineState
 }
@@ -2680,7 +2702,7 @@ async function guardarConfig(){
     accname:            dom('p-acc').value,
     wlanparameter:      dom('p-mac').value,
     tipoDispositivo:    _tipoDispositivo,
-    intervaloKeepAlive: parseFloat(dom('n-ka').value)||240,
+    intervaloKeepAlive: parseFloat(dom('n-ka').value)||1,
     intervaloReintento: parseFloat(dom('n-ri').value)||1,
     segsParaReconWifi:  parseInt(dom('n-rw').value)||45,
     segsParaResetNic:   parseInt(dom('n-rn').value)||70,

@@ -1,6 +1,6 @@
 {
   "name": "internetsosplay",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "description": "InternetSOSplay — Reconexion automatica para portales cautivos y uso de emergencia",
   "main": "main.js",
   "author": "OfertivaMX",
