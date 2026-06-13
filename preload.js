@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('api', {
   // ── CONTROLES DE VENTANA ────────────────────────────────────────
   capturePortalParams: () => ipcRenderer.invoke('capture-portal-params'),
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+  windowHide:     () => ipcRenderer.invoke('window-hide'),
   windowMaximize: () => ipcRenderer.invoke('window-maximize'),
   windowClose:    () => ipcRenderer.invoke('window-close'),
 

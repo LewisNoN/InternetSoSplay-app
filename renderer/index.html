@@ -884,7 +884,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 <div class="titlebar">
   <span class="titlebar-title">InternetSOSplay v31-vintage</span>
   <div class="titlebar-controls">
-    <button class="titlebar-btn" onclick="window.api.windowMinimize()">&#x2500;</button>
+    <button class="titlebar-btn" title="Minimizar a bandeja del sistema" onclick="window.api.windowHide()" style="font-size:11px;">&#x2399;</button>
+    <button class="titlebar-btn" title="Minimizar ventana" onclick="window.api.windowMinimize()">&#x2500;</button>
     <button class="titlebar-btn" onclick="window.api.windowMaximize()">&#x25A1;</button>
     <button class="titlebar-btn close" onclick="window.api.windowClose()">&#x2715;</button>
   </div>
@@ -1085,7 +1086,7 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
         <span class="license-copy-feedback" id="license-copy-feedback">ID copiado</span>
       </div>
     </div>
-    <button type="button" class="license-contact-btn" onclick="openExternalLink('https://www.facebook.com/profile.php?id=61585233343086')">
+    <button type="button" class="license-contact-btn" onclick="openExternalLink('https://www.facebook.com/profile.php?id=61590688950489')">
       Enviar mensaje para comprar (Facebook)
     </button>
     <div class="license-buy-note" id="license-buy-note">
@@ -1509,6 +1510,19 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
       <div class="community-text" style="margin-bottom:6px;">
         En nuestras redes encontrarás las mejores ofertas en muebles, electrónica y más, organizadas, con errores de precio y ofertas exclusivas de tiendas departamentales físicas, en línea y locales. También publicamos actualizaciones de nuestras aplicaciones.
       </div>
+      <!-- PERFIL PERSONAL - seccion destacada -->
+      <div style="margin-bottom:14px;padding:14px 16px;border-radius:12px;background:linear-gradient(135deg,rgba(99,179,237,0.12),rgba(147,197,253,0.06));border:1px solid rgba(99,179,237,0.25);">
+        <div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:6px;">👋 ¡Hola! Soy InoxMaker</div>
+        <div style="font-size:12px;color:var(--fg);line-height:1.6;margin-bottom:10px;">
+          Comparto aquí mis proyectos: videos de YouTube, aplicaciones, mods, electrónica y más. Si tienes dudas sobre cualquiera de mis proyectos, mándame mensaje, le doy seguimiento a todos sus mensajes. ¡Gracias por apoyar mi trabajo!
+        </div>
+        <a href="#" class="community-link" onclick="openExternalLink('https://www.facebook.com/profile.php?id=61590688950489'); return false;"
+          style="font-size:13px;font-weight:600;">
+          💬 Contacto directo: Perfil personal ↗
+        </a>
+      </div>
+
+      <div style="font-size:11px;color:var(--fg-low);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Comunidad OfertivaMX</div>
       <div class="community-text">
         <a href="#" class="community-link" onclick="openExternalLink('https://www.facebook.com/profile.php?id=61585233343086'); return false;">Facebook: Ofertiva Mexico ↗</a><br>
         <a href="#" class="community-link" onclick="openExternalLink('https://t.me/OfertivaMexico'); return false;">Telegram — Grupo general: OfertivaMexico ↗</a><br>
@@ -1613,7 +1627,7 @@ if (typeof window.api === 'undefined') {
     saveAppearance: function(a){ try{localStorage.setItem('tp_appearance',JSON.stringify(a));}catch(e){} return Promise.resolve({ok:true}); },
     loadAppearance: function(){ try{var d=localStorage.getItem('tp_appearance');return Promise.resolve({ok:true,appearance:d?JSON.parse(d):null});}catch(e){return Promise.resolve({ok:true,appearance:null});} },
     capturePortalParams:function(){ return Promise.resolve({ ok:false, error:'No disponible en modo desarrollo — usa la app instalada' }); },
-    windowMinimize:function(){}, windowMaximize:function(){}, windowClose:function(){},
+    windowMinimize:function(){}, windowMaximize:function(){}, windowClose:function(){}, windowHide:function(){},
     onPsData:function(cb){}, onPsLog:function(cb){}, onPsError:function(cb){},
     onPsStarted:function(cb){}, onPsStopped:function(cb){},
     getLicenseStatus:function(){
@@ -1876,18 +1890,14 @@ function startLicenseUiTimer(){
 
 function formatTrialCountdown(totalSeconds){
   var s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  var pad = function(n){ return n < 10 ? '0'+n : ''+n; };
   var dias  = Math.floor(s / 86400);
   var horas = Math.floor((s % 86400) / 3600);
   var mins  = Math.floor((s % 3600) / 60);
   var segs  = s % 60;
-  var pad   = function(n){ return n < 10 ? '0'+n : ''+n; };
-  if (dias > 0) {
-    return dias + 'd ' + pad(horas) + 'h ' + pad(mins) + 'm ' + pad(segs) + 's';
-  } else if (horas > 0) {
-    return pad(horas) + 'h ' + pad(mins) + 'm ' + pad(segs) + 's';
-  } else if (mins > 0) {
-    return pad(mins) + 'm ' + pad(segs) + 's';
-  }
+  if (dias > 0)  return dias  + 'd ' + pad(horas) + 'h ' + pad(mins) + 'm ' + pad(segs) + 's';
+  if (horas > 0) return pad(horas) + 'h ' + pad(mins) + 'm ' + pad(segs) + 's';
+  if (mins > 0)  return pad(mins) + 'm ' + pad(segs) + 's';
   return segs + 's';
 }
 
@@ -2623,7 +2633,7 @@ function handlePsData(data){
       var base = (dropTimeNet!==null) ? dropTimeNet : dropTimeAuth;
       var elapsed = base!==null ? Math.round((Date.now()-base)/1000) : 999;
       // Si la caída duró menos de 2s → pérdida de paquetes, no reconexión real
-      if(elapsed <= 2 && dropTimeNet!==null){
+      if(elapsed <= 10 && dropTimeNet!==null){
         perdidaCount++;
         dom('m-perdida').textContent = (data.time||nowStr()) + ' (' + perdidaCount + ')';
         dropTimeNet=null; dropTimeAuth=null; pendienteRecuperacion=false;

@@ -294,8 +294,26 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
+  // ── TRAY: bandeja del sistema ─────────────────────────────────────
+  const { Tray, Menu, nativeImage } = require('electron');
+  let appTray = null;
+  try {
+    const trayIcon = nativeImage.createFromPath(
+      path.join(__dirname, 'assets', 'icon.ico')
+    ).resize({ width: 16, height: 16 });
+    appTray = new Tray(trayIcon);
+    appTray.setToolTip('InternetSOSplay');
+    appTray.setContextMenu(Menu.buildFromTemplate([
+      { label: 'Abrir InternetSOSplay', click: () => { if(mainWindow){ mainWindow.show(); mainWindow.focus(); } } },
+      { type: 'separator' },
+      { label: 'Salir', click: () => { app.quit(); } }
+    ]));
+    appTray.on('click', () => { if(mainWindow){ mainWindow.show(); mainWindow.focus(); } });
+  } catch(e) { /* sin tray si falla el icono */ }
+
   mainWindow.on('closed', () => {
     stopScript();
+    if (appTray) { appTray.destroy(); appTray = null; }
     mainWindow = null;
   });
 }
@@ -698,6 +716,7 @@ ipcMain.handle('capture-portal-params', async () => {
 });
 
 ipcMain.handle('window-minimize', () => mainWindow && mainWindow.minimize());
+ipcMain.handle('window-hide',     () => mainWindow && mainWindow.hide());
 ipcMain.handle('window-maximize', () => {
   if (!mainWindow) return;
   mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize();
