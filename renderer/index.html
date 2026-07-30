@@ -1449,12 +1449,27 @@ El uso de la Aplicación implica el consentimiento del Usuario para el tratamien
         </div>
 
         <!-- Fallback sin DNS -->
-        <div class="toggle-row" style="margin-bottom:2px;">
+        <div class="toggle-row" style="margin-bottom:6px;">
           <div class="toggle-info">
             <span class="toggle-label" style="font-size:12px;">Fallback sin DNS</span>
             <span class="toggle-desc">Detecta conexión por gateway si DNS falla</span>
           </div>
           <label class="switch"><input type="checkbox" id="tog-fallback-dns" checked/><span class="switch-slider"></span></label>
+        </div>
+
+        <!-- Cooldown de reconexión WiFi -->
+        <div class="toggle-row" style="margin-bottom:6px;">
+          <div class="toggle-info">
+            <span class="toggle-label" style="font-size:12px;">Cooldown reconexión WiFi</span>
+            <span class="toggle-desc">Evita spamear netsh mientras el WiFi ya está asociando (recomendado)</span>
+          </div>
+          <label class="switch"><input type="checkbox" id="tog-cooldown-wifi" onchange="onCooldownWifiChange()" checked/><span class="switch-slider"></span></label>
+        </div>
+        <div id="cooldown-wifi-options" style="display:block;padding-left:4px;">
+          <div class="field-label" style="font-size:11px;margin-bottom:2px;">Esperar <b id="lbl-cooldown-wifi">3.0</b>s entre intentos de netsh wlan connect</div>
+          <input type="range" id="sl-cooldown-wifi" min="0" max="10" step="0.5" value="3.0"
+            oninput="dom('lbl-cooldown-wifi').textContent=parseFloat(this.value).toFixed(1)"
+            style="width:100%;margin-bottom:8px;">
         </div>
 
       </div><!-- /advanced-panel -->
@@ -2712,7 +2727,9 @@ async function guardarConfig(){
     duracionDesconexion:     parseFloat(dom('sl-dur-desconexion').value),
     macSpoofing:             dom('tog-mac-spoof').checked,
     healthCheckAvanzado:     dom('tog-health-check').checked,
-    fallbackSinDns:          dom('tog-fallback-dns').checked
+    fallbackSinDns:          dom('tog-fallback-dns').checked,
+    cooldownWifiConnect:     dom('tog-cooldown-wifi').checked,
+    duracionCooldownWifi:    parseFloat(dom('sl-cooldown-wifi').value)
   };
   try{
     var r=await window.api.saveConfig(cfg);
@@ -2744,6 +2761,8 @@ async function loadSavedState(){
       if(c.macSpoofing!=null)         dom('tog-mac-spoof').checked=c.macSpoofing;
       if(c.healthCheckAvanzado!=null) dom('tog-health-check').checked=c.healthCheckAvanzado;
       if(c.fallbackSinDns!=null)      dom('tog-fallback-dns').checked=c.fallbackSinDns;
+      if(c.cooldownWifiConnect!=null) dom('tog-cooldown-wifi').checked=c.cooldownWifiConnect;
+      if(c.duracionCooldownWifi)      dom('sl-cooldown-wifi').value=c.duracionCooldownWifi, dom('lbl-cooldown-wifi').textContent=parseFloat(c.duracionCooldownWifi).toFixed(1);
       updateRetryWarning();
       addLog('gray','Configuracion previa cargada');
     }
@@ -2917,6 +2936,12 @@ function toggleAdvanced(){
   var open = p.style.display === 'none';
   p.style.display = open ? 'block' : 'none';
   if(a) a.textContent = open ? '▲' : '▼';
+}
+
+function onCooldownWifiChange(){
+  var checked = dom('tog-cooldown-wifi').checked;
+  var opts = dom('cooldown-wifi-options');
+  if(opts) opts.style.display = checked ? 'block' : 'none';
 }
 
 function onProactivaChange(){
